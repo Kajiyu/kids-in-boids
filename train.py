@@ -19,8 +19,9 @@ import boids_env
 
 TOTAL_EPISODE = 10000
 TOTAL_STEP_PER_EPISODE = 100000
-OPTIMIZING_SPAN = 30
+OPTIMIZING_SPAN = 5
 
+bce_loss = nnloss = nn.MSELoss()
 
 if __name__ == "__main__":
     # env
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     for idx_episode in range(TOTAL_EPISODE):
         optimizer.zero_grad()
         observation, reward, done, _ = env.reset()
-        observation = observation.reshape((1, -1))
+        observation = observation.reshape((1, -1)).astype("float32")
         x = torch.from_numpy(observation)
         x = x.requires_grad_()
         obs_list = []
@@ -53,21 +54,24 @@ if __name__ == "__main__":
         (h, prev_a) = model.init_states()
         for idx_step in range(TOTAL_STEP_PER_EPISODE):
             (dec_x, h, prev_a) = model(x, h, prev_a)
-            observation, reward, done, _ = env.step(prev_a.cpu().numpy().reshape((-1)))
-            observation = observation.reshape((1, -1))
+            observation, reward, done, _ = env.step(prev_a.detach().numpy().reshape((-1)))
+            observation = observation.reshape((1, -1)).astype("float32")
             x = torch.from_numpy(observation)
             x = x.requires_grad_()
-            obs_list.append(x)
+            obs_list.append(x.detach())
             dec_x_list.append(dec_x)
             if idx_step != 0 and idx_step % OPTIMIZING_SPAN == 0:
-                BCE = None
+                MSE = None
                 for j in range(len(obs_list)):
-                    if BCE is None:
-                        BCE = F.binary_cross_entropy(dec_x_list[j], obs_list[j], size_average=False)
+                    if MSE is None:
+                        MSE = bce_loss(dec_x_list[j], obs_list[j])
                     else:
-                        BCE = BCE + F.binary_cross_entropy(dec_x_list[j], obs_list[j], size_average=False)
-                loss = BCE + model.kld_loss
-                loss.backward()
+                        MSE = MSE + bce_loss(dec_x_list[j], obs_list[j])
+                loss = MSE + model.kld_loss
+                print("Episode", idx_episode, "- Step", idx_step, loss.data[0])
+                loss.backward(retain_graph=True)
+                optimizer.step()
+                nn.utils.clip_grad_norm(model.parameters(), clip)
                 obs_list = []
                 dec_x_list = []
                 optimizer.zero_grad()

@@ -21,60 +21,60 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.x_dim = x_dim
         self.a_dim = a_dim
-		self.h_dim = h_dim
-		self.z_dim = z_dim
-		self.n_layers = n_layers
-
-		#feature-extracting transformations
-		self.phi_x = nn.Sequential(
-			nn.Linear(x_dim, h_dim),
-			nn.ReLU(),
-			nn.Linear(h_dim, h_dim),
-			nn.ReLU()
+        self.h_dim = h_dim
+        self.z_dim = z_dim
+        self.n_layers = n_layers
+        
+        #feature-extracting transformations
+        self.phi_x = nn.Sequential(
+            nn.Linear(x_dim, h_dim),
+            nn.ReLU(),
+            nn.Linear(h_dim, h_dim),
+            nn.ReLU()
         )
-		self.phi_z = nn.Sequential(
-			nn.Linear(z_dim, h_dim),
-			nn.ReLU()
+        self.phi_z = nn.Sequential(
+            nn.Linear(z_dim, h_dim),
+            nn.ReLU()
         )
-
-		#encoder
-		self.enc = nn.Sequential(
-			nn.Linear(h_dim + h_dim + a_dim, h_dim),
-			nn.ReLU(),
-			nn.Linear(h_dim, h_dim),
-			nn.ReLU()
+        
+        #encoder
+        self.enc = nn.Sequential(
+            nn.Linear(h_dim + h_dim + a_dim, h_dim),
+            nn.ReLU(),
+            nn.Linear(h_dim, h_dim),
+            nn.ReLU()
         )
-		self.enc_mean = nn.Linear(h_dim, z_dim)
-		self.enc_std = nn.Sequential(
-			nn.Linear(h_dim, z_dim),
-			nn.Softplus()
+        self.enc_mean = nn.Linear(h_dim, z_dim)
+        self.enc_std = nn.Sequential(
+            nn.Linear(h_dim, z_dim),
+            nn.Softplus()
         )
-
-		#prior
-		self.prior = nn.Sequential(
-			nn.Linear(h_dim + a_dim, h_dim),
-			nn.ReLU()
+        
+        #prior
+        self.prior = nn.Sequential(
+            nn.Linear(h_dim + a_dim, h_dim),
+            nn.ReLU()
         )
-		self.prior_mean = nn.Linear(h_dim, z_dim)
-		self.prior_std = nn.Sequential(
-			nn.Linear(h_dim, z_dim),
-			nn.Softplus()
+        self.prior_mean = nn.Linear(h_dim, z_dim)
+        self.prior_std = nn.Sequential(
+            nn.Linear(h_dim, z_dim),
+            nn.Softplus()
         )
 
 		#decoder
-		self.dec = nn.Sequential(
-			nn.Linear(h_dim + h_dim + a_dim, h_dim),
-			nn.ReLU(),
-			nn.Linear(h_dim, h_dim),
-			nn.ReLU(),
+        self.dec = nn.Sequential(
+            nn.Linear(h_dim + h_dim + a_dim, h_dim),
+            nn.ReLU(),
+            nn.Linear(h_dim, h_dim),
+            nn.ReLU(),
             nn.Linear(h_dim, x_dim)
         )
 
 		#recurrence (Policy Network!)
-		self.rnn = nn.GRU(h_dim + h_dim, h_dim, n_layers, bias)
+        self.rnn = nn.GRU(h_dim + h_dim, h_dim, n_layers, bias)
         self.policy = nn.Sequential(
             nn.Linear(h_dim, a_dim),
-			nn.Tanh()
+            nn.Tanh()
         )
 
         self.all_enc_mean = []
@@ -98,8 +98,8 @@ class Model(nn.Module):
         return (h, prev_a)
     
     def reset_parameters(self, stdv=1e-1):
-		for weight in self.parameters():
-			weight.data.normal_(0, stdv)
+        for weight in self.parameters():
+            weight.data.normal_(0, stdv)
     
     def forward(self, x_t, h, prev_a):
         '''
@@ -136,24 +136,20 @@ class Model(nn.Module):
 
         self.all_enc_std.append(enc_std_t)
         self.all_enc_mean.append(enc_mean_t)
-        self.all_dec_mean.append(dec_t)
+        self.all_dec.append(dec_t)
 
         return (dec_t, h, a)
     
-
     def _reparameterized_sample(self, mean, std):
-		"""using std to sample"""
-		eps = torch.FloatTensor(std.size()).normal_()
-		eps = eps.requires_grad_()
-		return eps.mul(std).add_(mean)
-
-	def _kld_gauss(self, mean_1, std_1, mean_2, std_2):
-		"""Using std to compute KLD"""
-
-		kld_element =  (2 * torch.log(std_2) - 2 * torch.log(std_1) + 
-			(std_1.pow(2) + (mean_1 - mean_2).pow(2)) /
-			std_2.pow(2) - 1)
-		return	0.5 * torch.sum(kld_element)
-
-	def _nll_bernoulli(self, theta, x):
-		return - torch.sum(x*torch.log(theta) + (1-x)*torch.log(1-theta))
+        """using std to sample"""
+        eps = torch.FloatTensor(std.size()).normal_()
+        eps = eps.requires_grad_()
+        return eps.mul(std).add_(mean)
+    
+    def _kld_gauss(self, mean_1, std_1, mean_2, std_2):
+        """Using std to compute KLD"""
+        kld_element =  (2 * torch.log(std_2) - 2 * torch.log(std_1) + (std_1.pow(2) + (mean_1 - mean_2).pow(2)) / std_2.pow(2) - 1)
+        return	0.5 * torch.sum(kld_element)
+    
+    def _nll_bernoulli(self, theta, x):
+        return - torch.sum(x*torch.log(theta) + (1-x)*torch.log(1-theta))
