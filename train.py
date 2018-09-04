@@ -20,6 +20,7 @@ import boids_env
 TOTAL_EPISODE = 10000
 TOTAL_STEP_PER_EPISODE = 100000
 OPTIMIZING_SPAN = 5
+SAVE_SPAN = 500
 
 bce_loss = nnloss = nn.MSELoss()
 
@@ -76,3 +77,5 @@ if __name__ == "__main__":
                 dec_x_list = []
                 optimizer.zero_grad()
                 (h, prev_a) = model.init_states(h, prev_a)
+            if idx_step % SAVE_SPAN == 0:
+                torch.save(model.state_dict(), "./data/model_"+str(idx_episode)+".pth")
