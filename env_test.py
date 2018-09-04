@@ -6,7 +6,7 @@ import gym
 import random
 import numpy as np
 import gym.spaces
-import env
+import boids_env
 
 env = gym.make('Boids3d-v0')
 env.reset()
