@@ -41,13 +41,13 @@ class BoidsEnv(gym.Env):
     def __init__(self):
         super(BoidsEnv).__init__()
         self.mode = MODE
+        self.num_boids = BOIDS
         if self.mode == "3d":
             self.dim = 3
         else:
             self.dim = 2
         self.observation_space = spaces.Box((-1)*MAX_BOUNDARY, MAX_BOUNDARY, shape=(BOIDS, self.dim), dtype=np.int32) # others' positions
         self.action_space = spaces.Box(0., 1., shape=(self.dim,), dtype=np.float32), # velocity
-        self.reset()
 
     def reset(self):
         self.boids = []
@@ -59,6 +59,7 @@ class BoidsEnv(gym.Env):
             init_pos = np.array([0,0]).astype("float32")
         self.kid_agent = BoidKid(init_pos, mode=self.mode, dt=DT)
         self.steps = 0
+        return self.step(np.array([0.0, 0.0, 0.0]))
 
     def step(self, action):
         simulate_boundary(self.kid_agent)
@@ -178,5 +179,5 @@ class BoidKid(Boid):
         else:
             cos = np.sum(flag_vec) / (np.linalg.norm(action)*np.linalg.norm(_v))
             reward = (np.linalg.norm(action)/np.linalg.norm(_v)) * cos
-        print(action, _v)
+        # print(action, _v)
         return reward

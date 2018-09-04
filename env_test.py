@@ -9,7 +9,7 @@ import gym.spaces
 import boids_env
 
 env = gym.make('Boids3d-v0')
-env.reset()
+observation, reward, done, _ = env.reset()
 
 for i in range(10000):
     observation, reward, done, _ = env.step(np.array([random.random()*0.1, random.random()*0.1, random.random()*0.1]))
