@@ -147,6 +147,8 @@ class Model(nn.Module):
     def _reparameterized_sample(self, mean, std):
         """using std to sample"""
         eps = torch.FloatTensor(std.size()).normal_()
+        if self.use_cuda:
+            eps = eps.cuda()
         eps = eps.requires_grad_()
         return eps.mul(std).add_(mean)
     
