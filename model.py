@@ -155,7 +155,7 @@ class Model(nn.Module):
     
     def _reparameterized_sample(self, mean, std):
         """using std to sample"""
-        eps = torch.FloatTensor(std.size(), device=self.device).normal_()
+        eps = torch.zeros(std.size(), device=self.device, dtype=torch.float32).normal_()
         eps = eps.requires_grad_()
         return eps.mul(std).add_(mean)
     
