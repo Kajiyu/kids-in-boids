@@ -78,6 +78,19 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
+        if self.use_cuda:
+            self.phi_x.cuda()
+            self.phi_z.cuda()
+            self.enc.cuda()
+            self.enc_mean.cuda()
+            self.enc_std.cuda()
+            self.prior.cuda()
+            self.prior_mean.cuda()
+            self.prior_std.cuda()
+            self.dec.cuda()
+            self.rnn.cuda()
+            self.policy.cuda()
+        
         self.all_enc_mean = []
         self.all_enc_std = []
         self.all_dec = []
