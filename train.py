@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     model = Model(x_dim, a_dim, h_dim, z_dim, n_layers, USE_CUDA)
     if USE_CUDA:
-        model.cuda()
+        model = model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for idx_episode in range(TOTAL_EPISODE):

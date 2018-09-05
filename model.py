@@ -87,7 +87,8 @@ class Model(nn.Module):
     def init_states(self, h=None, prev_a=None):
         if h is None:
             if self.use_cuda:
-                pass
+                h = torch.zeros(self.n_layers, 1, self.h_dim).cuda().requires_grad_()
+                prev_a = torch.zeros(1, self.a_dim).cuda().requires_grad_()
             else:
                 h = torch.zeros(self.n_layers, 1, self.h_dim).requires_grad_()
                 prev_a = torch.zeros(1, self.a_dim).requires_grad_()
