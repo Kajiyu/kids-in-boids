@@ -30,7 +30,10 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--cuda', help='gpu mode', action='store_true')
     args = parser.parse_args()
 
-    USE_CUDA = args.cuda
+    if args.cuda:
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     # env
     env = gym.make('Boids3d-v0')
@@ -48,9 +51,8 @@ if __name__ == "__main__":
     #manual seed
     torch.manual_seed(seed)
 
-    model = Model(x_dim, a_dim, h_dim, z_dim, n_layers, USE_CUDA)
-    if USE_CUDA:
-        model = model.cuda()
+    model = Model(x_dim, a_dim, h_dim, z_dim, n_layers, device)
+    model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for idx_episode in range(TOTAL_EPISODE):
@@ -58,10 +60,7 @@ if __name__ == "__main__":
         optimizer.zero_grad()
         observation, reward, done, _ = env.reset()
         observation = observation.reshape((1, -1)).astype("float32")
-        x = torch.from_numpy(observation)
-        if USE_CUDA:
-            x = x.cuda()
-        x = x.requires_grad_()
+        x = torch.tensor(observation, device=device).requires_grad_()
         obs_list = []
         dec_x_list = []
         (h, prev_a) = model.init_states()
@@ -69,10 +68,7 @@ if __name__ == "__main__":
             (dec_x, h, prev_a) = model(x, h, prev_a)
             observation, reward, done, _ = env.step(prev_a.detach().numpy().reshape((-1)))
             observation = observation.reshape((1, -1)).astype("float32")
-            x = torch.from_numpy(observation)
-            if USE_CUDA:
-                x = x.cuda()
-            x = x.requires_grad_()
+            x = torch.tensor(observation, device=device).requires_grad_()
             obs_list.append(x.detach())
             dec_x_list.append(dec_x)
             if idx_step != 0 and idx_step % OPTIMIZING_SPAN == 0:

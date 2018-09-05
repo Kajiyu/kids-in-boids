@@ -17,14 +17,14 @@ from https://arxiv.org/abs/1506.02216.
 '''
 
 class Model(nn.Module):
-    def __init__(self, x_dim, a_dim, h_dim, z_dim, n_layers, bias=False, use_cuda=False):
+    def __init__(self, x_dim, a_dim, h_dim, z_dim, n_layers, device, bias=False):
         super(Model, self).__init__()
         self.x_dim = x_dim
         self.a_dim = a_dim
         self.h_dim = h_dim
         self.z_dim = z_dim
         self.n_layers = n_layers
-        self.use_cuda = use_cuda
+        self.device = device
         
         #feature-extracting transformations
         self.phi_x = nn.Sequential(
@@ -78,18 +78,17 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
-        if self.use_cuda:
-            self.phi_x.cuda()
-            self.phi_z.cuda()
-            self.enc.cuda()
-            self.enc_mean.cuda()
-            self.enc_std.cuda()
-            self.prior.cuda()
-            self.prior_mean.cuda()
-            self.prior_std.cuda()
-            self.dec.cuda()
-            self.rnn.cuda()
-            self.policy.cuda()
+        self.phi_x.to(self.device)
+        self.phi_z.to(self.device)
+        self.enc.to(self.device)
+        self.enc_mean.to(self.device)
+        self.enc_std.to(self.device)
+        self.prior.to(self.device)
+        self.prior_mean.to(self.device)
+        self.prior_std.to(self.device)
+        self.dec.to(self.device)
+        self.rnn.to(self.device)
+        self.policy.to(self.device)
         
         self.all_enc_mean = []
         self.all_enc_std = []
@@ -99,12 +98,8 @@ class Model(nn.Module):
     
     def init_states(self, h=None, prev_a=None):
         if h is None:
-            if self.use_cuda:
-                h = torch.zeros(self.n_layers, 1, self.h_dim).cuda().requires_grad_()
-                prev_a = torch.zeros(1, self.a_dim).cuda().requires_grad_()
-            else:
-                h = torch.zeros(self.n_layers, 1, self.h_dim).requires_grad_()
-                prev_a = torch.zeros(1, self.a_dim).requires_grad_()
+            h = torch.zeros(self.n_layers, 1, self.h_dim, device=self.device, dtype=torch.float32).requires_grad_()
+            prev_a = torch.zeros(1, self.a_dim, device=self.device, dtype=torch.float32).requires_grad_()
         else:
             h = h.clone()
             prev_a = prev_a.clone()
@@ -160,9 +155,7 @@ class Model(nn.Module):
     
     def _reparameterized_sample(self, mean, std):
         """using std to sample"""
-        eps = torch.FloatTensor(std.size()).normal_()
-        if self.use_cuda:
-            eps = eps.cuda()
+        eps = torch.FloatTensor(std.size(), device=self.device).normal_()
         eps = eps.requires_grad_()
         return eps.mul(std).add_(mean)
     
