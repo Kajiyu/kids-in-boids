@@ -66,7 +66,7 @@ if __name__ == "__main__":
         (h, prev_a) = model.init_states()
         for idx_step in range(TOTAL_STEP_PER_EPISODE):
             (dec_x, h, prev_a) = model(x, h, prev_a)
-            observation, reward, done, _ = env.step(prev_a.detach().numpy().reshape((-1)))
+            observation, reward, done, _ = env.step(prev_a.detach().cpu().numpy().reshape((-1)))
             observation = observation.reshape((1, -1)).astype("float32")
             x = torch.tensor(observation, device=device).requires_grad_()
             obs_list.append(x.detach())
