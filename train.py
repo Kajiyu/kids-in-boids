@@ -3,6 +3,7 @@
 
 import os, sys
 import random
+import argparse
 import numpy as np
 
 import torch
@@ -25,6 +26,12 @@ SAVE_SPAN = 500
 bce_loss = nnloss = nn.MSELoss()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--cuda', help='gpu mode', action='store_true')
+    args = parser.parse_args()
+
+    USE_CUDA = args.cuda
+
     # env
     env = gym.make('Boids3d-v0')
 
@@ -41,14 +48,19 @@ if __name__ == "__main__":
     #manual seed
     torch.manual_seed(seed)
 
-    model = Model(x_dim, a_dim, h_dim, z_dim, n_layers)
+    model = Model(x_dim, a_dim, h_dim, z_dim, n_layers, USE_CUDA)
+    if USE_CUDA:
+        model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for idx_episode in range(TOTAL_EPISODE):
+        model.reset_parameters()
         optimizer.zero_grad()
         observation, reward, done, _ = env.reset()
         observation = observation.reshape((1, -1)).astype("float32")
         x = torch.from_numpy(observation)
+        if USE_CUDA:
+            x = x.cuda()
         x = x.requires_grad_()
         obs_list = []
         dec_x_list = []
@@ -58,6 +70,8 @@ if __name__ == "__main__":
             observation, reward, done, _ = env.step(prev_a.detach().numpy().reshape((-1)))
             observation = observation.reshape((1, -1)).astype("float32")
             x = torch.from_numpy(observation)
+            if USE_CUDA:
+                x = x.cuda()
             x = x.requires_grad_()
             obs_list.append(x.detach())
             dec_x_list.append(dec_x)
@@ -79,3 +93,8 @@ if __name__ == "__main__":
                 (h, prev_a) = model.init_states(h, prev_a)
             if idx_step % SAVE_SPAN == 0:
                 torch.save(model.state_dict(), "./data/model_"+str(idx_episode)+".pth")
+                print("----step "+str(idx_step)+" ----")
+                print("Kid Position:", env.kid_agent.position)
+                print("Kid Velocity:", env.kid_agent.velocity)
+                print("Observation:", observation.reshape((-1,3)))
+                print("----------------------------")

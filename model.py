@@ -17,13 +17,14 @@ from https://arxiv.org/abs/1506.02216.
 '''
 
 class Model(nn.Module):
-    def __init__(self, x_dim, a_dim, h_dim, z_dim, n_layers, bias=False):
+    def __init__(self, x_dim, a_dim, h_dim, z_dim, n_layers, bias=False, use_cuda=False):
         super(Model, self).__init__()
         self.x_dim = x_dim
         self.a_dim = a_dim
         self.h_dim = h_dim
         self.z_dim = z_dim
         self.n_layers = n_layers
+        self.use_cuda = use_cuda
         
         #feature-extracting transformations
         self.phi_x = nn.Sequential(
@@ -85,8 +86,11 @@ class Model(nn.Module):
     
     def init_states(self, h=None, prev_a=None):
         if h is None:
-            h = torch.zeros(self.n_layers, 1, self.h_dim).requires_grad_()
-            prev_a = torch.zeros(1, self.a_dim).requires_grad_()
+            if self.use_cuda:
+                pass
+            else:
+                h = torch.zeros(self.n_layers, 1, self.h_dim).requires_grad_()
+                prev_a = torch.zeros(1, self.a_dim).requires_grad_()
         else:
             h = h.clone()
             prev_a = prev_a.clone()
